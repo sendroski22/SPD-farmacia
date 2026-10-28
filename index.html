@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pastillero semanal · Servicio personalizado de dosificación (SPD)</title>
+<style>
+:root{--bg:#e9f0ee;--ink:#14302f;--mut:#5b7471;--card:#fff;--line:#c9d8d5;--acc:#0f7a63;--ok:#1e9e5a;--ko:#d33c3c}
+@media(prefers-color-scheme:dark){:root{--bg:#10201f;--ink:#e6f1ef;--mut:#92aca8;--card:#182e2c;--line:#2d4a47;--acc:#3ec9a7}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Georgia,"Times New Roman",serif}
+h1,h2,h3,button,.lbl{font-family:"Trebuchet MS","Segoe UI",sans-serif}
+header{padding:18px 20px 6px;max-width:1200px;margin:auto}
+h1{margin:0;font-size:1.5rem}header p{margin:2px 0 0;color:var(--mut);font-size:.9rem}
+nav{display:flex;gap:8px;flex-wrap:wrap;max-width:1200px;margin:10px auto;padding:0 20px}
+nav button{border:1px solid var(--line);background:var(--card);color:var(--ink);padding:8px 14px;border-radius:20px;cursor:pointer;font-size:.9rem}
+nav button.on{background:var(--acc);color:#fff;border-color:var(--acc)}
+button:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+main{display:grid;grid-template-columns:260px 1fr;gap:16px;max-width:1200px;margin:auto;padding:0 20px 20px}
+@media(max-width:820px){main{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px}
+.case{grid-column:1/-1}.case h2{margin:0 0 4px;font-size:1.1rem}.case p{margin:4px 0}
+.rx{margin:8px 0 0;padding-left:20px;font-size:.92rem}
+.side h3,.rxh{margin:0 0 8px;font-size:.95rem}
+.med{display:flex;align-items:center;gap:10px;padding:6px 8px;border-radius:8px;cursor:grab;touch-action:none;user-select:none;font-size:.9rem}
+.med:hover{background:var(--bg)}
+.pill{display:inline-flex;align-items:center;justify-content:center;width:26px;height:18px;border-radius:9px;color:#fff;font:700 9px "Trebuchet MS",sans-serif;box-shadow:inset 0 -3px 0 rgba(0,0,0,.18);flex:none;touch-action:none;user-select:none;text-shadow:0 0 2px rgba(0,0,0,.5)}
+.med .pill{width:34px;height:22px;font-size:11px}
+.box{background:linear-gradient(#dfeceb,#cfe2e0);border:2px solid #9bbab6;border-radius:14px;padding:10px;overflow-x:auto}
+.grid{display:grid;grid-template-columns:70px repeat(7,minmax(62px,1fr));gap:6px;min-width:520px}
+.lbl{font-size:.8rem;font-weight:700;color:#27504c;display:flex;align-items:center;justify-content:center;text-align:center}
+.cell{min-height:62px;background:rgba(255,255,255,.75);border:2px solid #a9c5c1;border-radius:9px;padding:4px;display:flex;flex-wrap:wrap;gap:3px;align-content:flex-start;transition:background .15s}
+.cell.over{background:#fff;border-color:var(--acc)}
+.cell.ok{border-color:var(--ok);background:#d8f3e3}.cell.ko{border-color:var(--ko);background:#fbdcdc}
+.cell .pill{cursor:grab}
+.bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px}
+.bar button{background:var(--acc);color:#fff;border:0;padding:10px 18px;border-radius:8px;font-size:.95rem;cursor:pointer;font-weight:700}
+.bar button.sec{background:transparent;color:var(--ink);border:1px solid var(--line);font-weight:400}
+#res{margin-top:12px;display:none}#res b{font-size:1.5rem}
+#res.lo{border-left:6px solid var(--ko)}#res.mid{border-left:6px solid #e0a020}#res.hi{border-left:6px solid var(--ok)}
+.hint{font-size:.8rem;color:var(--mut);margin-top:8px}
+.ghost{position:fixed;pointer-events:none;z-index:9;opacity:.9;transform:translate(-50%,-50%) scale(1.3)}
+footer{max-width:1200px;margin:auto;padding:6px 20px 24px;font-size:.8rem;color:var(--mut)}
+footer a{color:var(--acc)}
+</style>
+</head>
+<body>
+<header>
+<h1>Pastillero semanal: servicio personalizado de dosificación</h1>
+<p>Dispensación de productos farmacéuticos · RA2 · CE j) Se ha realizado el servicio personalizado de dosificación</p>
+</header>
+<nav id="tabs" aria-label="Casos clínicos"></nav>
+<main>
+<section class="card case" id="case"></section>
+<aside class="card side"><h3>Medicamentos disponibles</h3><div id="meds"></div>
+<p class="hint">Arrastra una pastilla a una casilla. Para quitarla, arrástrala fuera del pastillero.</p></aside>
+<section>
+<div class="box"><div class="grid" id="grid"></div></div>
+<p class="hint">Mañana = desayuno · Mediodía = comida · Tarde = merienda · Noche = cena / al acostarse</p>
+<div class="bar"><button id="chk">Comprobar respuesta</button><button class="sec" id="sol">Ver solución</button><button class="sec" id="clr">Vaciar pastillero</button></div>
+<div class="card" id="res" role="status"></div>
+</section>
+</main>
+<footer>Material educativo con licencia <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.es">CC BY-NC-SA 4.0</a>. Los casos son ficticios y con fines docentes: no sustituyen la prescripción ni el criterio profesional.</footer>
+<script>
+const D=["L","M","X","J","V","S","D"],S=["Mañana","Mediodía","Tarde","Noche"];
+// m(nombre, pauta, huecos "0123", días "0123456") — sin huecos = medicamento NO pautado
+const m=(n,rx,s,d,g)=>({n,rx,s,d:d||"0123456",g});
+const ac=(n,l,k,rx,s,d)=>m(n,rx,s,d,{h:0,l,k,rn:"Acenocumarol (comprimidos de 4 mg, fraccionables)"}); // variantes de dosis: mismo tono, menor intensidad = menor dosis
+const CASES=[
+{t:"Caso 1 · Básico",who:"Rosa M., 68 años",
+txt:"Mujer jubilada, 64 kg. Hipertensión e hipercolesterolemia en tratamiento estable. Vive sola y pide organizar su medicación semanal en un pastillero.",
+meds:[m("Enalapril 20 mg","1 comprimido en el desayuno","0"),m("Atorvastatina 20 mg","1 comprimido en la cena","3"),m("Omeprazol 20 mg"),m("Ibuprofeno 600 mg")]},
+{t:"Caso 2 · Intermedio",who:"Antonio P., 72 años",
+txt:"Varón con diabetes tipo 2, hipertensión y un infarto hace 3 años. Su médico de familia le ha actualizado la pauta tras la última analítica.",
+meds:[m("Metformina 850 mg","1 comprimido en desayuno y otro en cena","03"),m("Amlodipino 5 mg","1 comprimido en el desayuno","0"),m("AAS 100 mg","1 comprimido en la comida","1"),m("Simvastatina 20 mg","1 comprimido en la cena","3"),m("Glibenclamida 5 mg"),m("Diclofenaco 50 mg"),m("Paracetamol 1 g")]},
+{t:"Caso 3 · Avanzado",who:"Carmen L., 79 años",
+txt:"Mujer viuda, polimedicada. Fibrilación auricular, hipotiroidismo, osteoporosis, artrosis de rodillas, insomnio y anemia ferropénica reciente. Su hija recoge la medicación. Ten en cuenta que la levotiroxina se toma en ayunas y debe separarse al menos 4 h del hierro y del calcio, y que el hierro y el calcio también se separan entre sí unas 2 h.",
+meds:[m("Levotiroxina 75 µg","1 comprimido en ayunas (antes del desayuno)","0"),m("Apixabán 5 mg","1 comprimido cada 12 h (desayuno y cena)","03"),m("Bisoprolol 2,5 mg","1 comprimido en el desayuno","0"),m("Calcio 600 mg + Vit. D3 400 UI","1 comprimido en la merienda","2"),m("Sulfato ferroso 105 mg","1 comprimido en la comida, en días alternos (lunes, miércoles y viernes)","1","024"),m("Lorazepam 1 mg","1 comprimido al acostarse","3"),m("Paracetamol 1 g","1 comprimido cada 8 h (desayuno, merienda y cena)","023"),m("Acenocumarol 4 mg"),m("Ibuprofeno 600 mg"),m("Zolpidem 10 mg")]},
+{t:"Caso 4 · Dosis variables",who:"Josefa R., 77 años",
+txt:"Mujer con fibrilación auricular anticoagulada con acenocumarol (Sintrom), hipertensión e hipercolesterolemia. Su hematólogo le ajusta la dosis según el día. Las tres dosis de acenocumarol comparten color: cuanto más claro, menos dosis (¼, ½ o 1 comprimido de 4 mg). La digoxina se descansa el fin de semana.",
+meds:[ac("Acenocumarol 1 mg (¼ comp.)",76,"A1","","3","6"),ac("Acenocumarol 2 mg (½ comp.)",58,"A2","","3","135"),ac("Acenocumarol 4 mg (1 comp.)",38,"A4","Cena. Lunes, miércoles y viernes: 1 comprimido (4 mg). Martes, jueves y sábado: ½ comprimido (2 mg). Domingo: ¼ de comprimido (1 mg)","3","024"),m("Digoxina 0,125 mg","1 comprimido en el desayuno, de lunes a viernes","0","01234"),m("Bisoprolol 5 mg","1 comprimido en el desayuno","0"),m("Atorvastatina 20 mg","1 comprimido en la cena","3"),m("Ibuprofeno 600 mg"),m("Apixabán 5 mg")]},
+{t:"Caso 5 · Complejo",who:"Manuel G., 74 años",
+txt:"Varón con insuficiencia cardíaca, diabetes tipo 2, gota y osteoporosis. Acaba de salir del hospital con 9 fármacos y una pauta con medicamentos semanales y de días alternos. Revisa bien cada indicación.",
+meds:[m("Furosemida 40 mg","1 comprimido en el desayuno","0"),m("Espironolactona 25 mg","1 comprimido en el desayuno","0"),m("Carvedilol 6,25 mg","1 comprimido en desayuno y otro en cena","03"),m("Sitagliptina 100 mg","1 comprimido en el desayuno","0"),m("Metformina 850 mg","1 comprimido en comida y otro en cena","13"),m("Alopurinol 100 mg","1 comprimido en la comida","1"),m("Atorvastatina 40 mg","1 comprimido en la cena","3"),m("Alendronato 70 mg","1 comprimido a la semana: lunes, en ayunas","0","0"),m("Prednisona 5 mg","1 comprimido en el desayuno los lunes, miércoles y viernes","0","024"),m("Ibuprofeno 600 mg"),m("Glimepirida 2 mg"),m("Hidroclorotiazida 25 mg")]}
+];
+CASES.forEach(c=>c.meds.forEach((x,i)=>{x.id=i;x.c=x.g?`hsl(${x.g.h},72%,${x.g.l}%)`:`hsl(${(i*137.5)%360},68%,${i%2?42:48}%)`;x.k=x.g?x.g.k:x.n.replace(/[^A-Za-zÁ-ú]/g,"").slice(0,2)}));
+let cur=0,st={},$=id=>document.getElementById(id);
+const key=(d,s)=>d*4+s,med=id=>CASES[cur].meds[id];
+function pill(id){const e=document.createElement("span");e.className="pill";e.style.background=med(id).c;e.textContent=med(id).k;e.title=med(id).n;e.dataset.id=id;return e}
+function load(i){cur=i;st={};const c=CASES[i];
+ $("tabs").innerHTML="";CASES.forEach((x,j)=>{const b=document.createElement("button");b.textContent=x.t;b.className=j==i?"on":"";b.onclick=()=>load(j);$("tabs").append(b)});
+ $("case").innerHTML=`<h2>${c.who}</h2><p>${c.txt}</p><h3 class="rxh">Prescripción médica</h3><ul class="rx">${c.meds.filter(x=>x.rx).map(x=>`<li><b>${x.g?x.g.rn:x.n}</b>: ${x.rx}</li>`).join("")}</ul><p class="hint">Hay medicamentos disponibles que no están en la prescripción.</p>`;
+ $("meds").innerHTML="";[...c.meds].sort((a,b)=>a.n.localeCompare(b.n,"es")).forEach(x=>{const r=document.createElement("div");r.className="med";r.append(pill(x.id),x.n);r.onpointerdown=e=>drag(e,x.id,null);$("meds").append(r)});
+ $("grid").innerHTML="<div></div>"+D.map(d=>`<div class="lbl">${d}</div>`).join("");
+ for(let s=0;s<4;s++){$("grid").insertAdjacentHTML("beforeend",`<div class="lbl">${S[s]}</div>`);for(let d=0;d<7;d++){const e=document.createElement("div");e.className="cell";e.dataset.k=key(d,s);e.setAttribute("aria-label",`${D[d]} ${S[s]}`);$("grid").append(e)}}
+ $("res").style.display="none"}
+function draw(){document.querySelectorAll(".cell").forEach(e=>{e.innerHTML="";e.classList.remove("ok","ko");(st[e.dataset.k]||[]).forEach(id=>{const p=pill(id);p.onpointerdown=ev=>drag(ev,id,e.dataset.k);e.append(p)})})}
+function drag(e,id,from){e.preventDefault();e.stopPropagation();const g=pill(id);g.className+=" ghost";document.body.append(g);
+ const mv=ev=>{g.style.left=ev.clientX+"px";g.style.top=ev.clientY+"px";document.querySelectorAll(".cell").forEach(c=>c.classList.remove("over"));const t=document.elementFromPoint(ev.clientX,ev.clientY)?.closest(".cell");t&&t.classList.add("over")};
+ const up=ev=>{removeEventListener("pointermove",mv);removeEventListener("pointerup",up);g.remove();document.querySelectorAll(".cell").forEach(c=>c.classList.remove("over"));
+  const t=document.elementFromPoint(ev.clientX,ev.clientY)?.closest(".cell");
+  if(from!==null)st[from]=(st[from]||[]).filter(x=>x!=id);
+  if(t){const k=t.dataset.k;st[k]=st[k]||[];if(!st[k].includes(id))st[k].push(id)}
+  $("res").style.display="none";draw()};
+ addEventListener("pointermove",mv);addEventListener("pointerup",up);mv(e)}
+function sol(){const r={};CASES[cur].meds.forEach(x=>{if(!x.s)return;for(const d of x.d)for(const s of x.s)(r[key(+d,+s)]=r[key(+d,+s)]||[]).push(x.id)});return r}
+const same=(a=[],b=[])=>a.length==b.length&&a.every(x=>b.includes(x));
+$("chk").onclick=()=>{const r=sol();let ok=0;
+ document.querySelectorAll(".cell").forEach(e=>{const g=same(st[e.dataset.k],r[e.dataset.k]);e.classList.add(g?"ok":"ko");ok+=g});
+ const n=Math.round(ok/28*100)/10,box=$("res");
+ const [cl,msg]=n<5?["lo","Debes estar más atento. Este trabajo es importante para clientes de la farmacia."]:n<9?["mid","Lo has hecho bastante bien, pero todavía puedes y debes hacerlo mejor."]:["hi","¡Buen trabajo! Sigue así."];
+ box.className="card "+cl;box.style.display="block";
+ box.innerHTML=`<b>${n.toString().replace(".",",")} / 10</b> · ${ok} de 28 casillas correctas<p>${msg}</p><p class="hint">En verde, casillas correctas; en rojo, casillas con pastillas que faltan, sobran o son erróneas.</p>`};
+$("sol").onclick=()=>{st=sol();$("res").style.display="none";draw()};
+$("clr").onclick=()=>{st={};$("res").style.display="none";draw()};
+load(0);
+</script>
+</body>
+</html>
