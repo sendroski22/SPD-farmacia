@@ -40,14 +40,22 @@ main{display:grid;grid-template-columns:260px 1fr;gap:16px;max-width:1200px;marg
 #res.lo{border-left:6px solid var(--ko)}#res.mid{border-left:6px solid #e0a020}#res.hi{border-left:6px solid var(--ok)}
 .hint{font-size:.8rem;color:var(--mut);margin-top:8px}
 .ghost{position:fixed;pointer-events:none;z-index:9;opacity:.9;transform:translate(-50%,-50%) scale(1.3)}
-footer{max-width:1200px;margin:auto;padding:6px 20px 24px;font-size:.8rem;color:var(--mut)}
+footer{max-width:1200px;margin:auto;padding:6px 20px 24px;font-size:.8rem;color:var(--mut)}footer p{margin:4px 0}
+.aviso{font-size:1rem;font-weight:700;color:var(--ink);margin:8px 0 12px}
+.lnk{background:none;border:0;padding:0;font:inherit;color:var(--acc);text-decoration:underline;cursor:pointer}
+dialog{max-width:560px;width:calc(100% - 40px);border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--ink);padding:20px}
+dialog::backdrop{background:rgba(0,0,0,.45)}
+dialog h2{margin:0 0 10px;font-size:1.15rem}
+dialog dt{font:700 .8rem "Trebuchet MS","Segoe UI",sans-serif;color:var(--mut);text-transform:uppercase;margin-top:10px}
+dialog dd{margin:2px 0 0}
+dialog button{margin-top:16px;background:var(--acc);color:#fff;border:0;padding:8px 18px;border-radius:8px;cursor:pointer;font-weight:700}
 footer a{color:var(--acc)}
 </style>
 </head>
 <body>
 <header>
 <h1>Pastillero semanal: servicio personalizado de dosificación</h1>
-<p>Dispensación de productos farmacéuticos · RA2 · CE j) Se ha realizado el servicio personalizado de dosificación</p>
+<p><button type="button" class="lnk" id="cur">Ver relación curricular</button></p>
 </header>
 <nav id="tabs" aria-label="Casos clínicos"></nav>
 <main>
@@ -61,7 +69,21 @@ footer a{color:var(--acc)}
 <div class="card" id="res" role="status"></div>
 </section>
 </main>
-<footer>Material educativo con licencia <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.es">CC BY-NC-SA 4.0</a>. Los casos son ficticios y con fines docentes: no sustituyen la prescripción ni el criterio profesional.</footer>
+<dialog id="dlg" aria-labelledby="dt">
+<h2 id="dt">Relación curricular</h2>
+<dl>
+<dt>Ciclo formativo</dt><dd>CFGM Farmacia y parafarmacia</dd>
+<dt>Módulo formativo</dt><dd>0101 - Dispensación de productos farmacéuticos</dd>
+<dt>Resultado de aprendizaje</dt><dd>2. Dispensa medicamentos relacionándolos con las aplicaciones terapéuticas y las condiciones de uso.</dd>
+<dt>Criterio de evaluación</dt><dd>2.j) Se ha realizado el servicio personalizado de dosificación.</dd>
+</dl>
+<button type="button" id="dcl">Cerrar</button>
+</dialog>
+<footer>
+<p class="aviso">Los casos son ficticios y con fines docentes: no sustituyen la prescripción ni el criterio profesional.</p>
+<p>“Web interactiva para practicar el SPD (Sistema personalizado de dosificación)” por Pablo A. Sendra Lleó (2026), disponible bajo licencia <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.es">CC BY-NC-SA 4.0</a>.</p>
+<p>Este material fue desarrollado con la asistencia del modelo de inteligencia artificial <a href="https://claude.ai/">Claude (Anthropic)</a>.</p>
+</footer>
 <script>
 const D=["L","M","X","J","V","S","D"],S=["Mañana","Mediodía","Tarde","Noche"];
 // m(nombre, pauta, huecos "0123", días "0123456") — sin huecos = medicamento NO pautado
@@ -114,6 +136,9 @@ $("chk").onclick=()=>{const r=sol();let ok=0;
  box.innerHTML=`<b>${n.toString().replace(".",",")} / 10</b> · ${ok} de 28 casillas correctas<p>${msg}</p><p class="hint">En verde, casillas correctas; en rojo, casillas con pastillas que faltan, sobran o son erróneas.</p>`};
 $("sol").onclick=()=>{st=sol();$("res").style.display="none";draw()};
 $("clr").onclick=()=>{st={};$("res").style.display="none";draw()};
+$("cur").onclick=()=>$("dlg").showModal();
+$("dcl").onclick=()=>$("dlg").close();
+$("dlg").onclick=e=>{if(e.target===$("dlg"))$("dlg").close()};
 load(0);
 </script>
 </body>
